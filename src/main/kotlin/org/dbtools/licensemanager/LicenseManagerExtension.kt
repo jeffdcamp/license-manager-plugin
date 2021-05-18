@@ -18,6 +18,9 @@ open class LicenseManagerExtension @Inject constructor(
     @get:Input
     var excludeGroups: List<String> = emptyList()
 
+    /**
+     * Default output directory
+     */
     @get:Optional
     @get:Input
     var outputDir: String = defaultOutputDir
@@ -31,4 +34,13 @@ open class LicenseManagerExtension @Inject constructor(
     @get:Optional
     @get:Input
     var variantName: String? = null
+
+    @get:Input
+    var createHtmlReport: Boolean = true
+
+    @get:Input
+    var createJsonReport: Boolean = false
+
+    @get:Input
+    var createCsvReport: Boolean = false
 }

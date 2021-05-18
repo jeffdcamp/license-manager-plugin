@@ -9,6 +9,7 @@ import org.gradle.api.artifacts.ResolvedConfiguration
 import org.gradle.api.artifacts.ResolvedDependency
 import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.TaskAction
+import org.intellij.lang.annotations.Language
 import java.io.File
 import javax.inject.Inject
 
@@ -35,7 +36,16 @@ open class ReportTask @Inject constructor(
     fun execute() {
         val poms = readPoms(false)
 
-        generateLicenceReportJson(poms, File(getOutputDir(), "${extension.outputFilename}.json"))
+        // Reports
+        if (extension.createHtmlReport) {
+            generateLicenceReportHtml(poms, File(getOutputDir(extension.outputDir), "${extension.outputFilename}.html"))
+        }
+        if (extension.createJsonReport) {
+            generateLicenceReportJson(poms, File(getOutputDir(extension.outputDir), "${extension.outputFilename}.json"))
+        }
+        if (extension.createCsvReport) {
+            generateLicenceReportCsv(poms, File(getOutputDir(extension.outputDir), "${extension.outputFilename}.csv"))
+        }
     }
 
     private fun readPoms(filterTransitive: Boolean): List<Pom> {
@@ -198,14 +208,67 @@ open class ReportTask @Inject constructor(
         return resolvedArtifacts
     }
 
+    private fun formatUrl(url: String?): String? {
+        // # can cause issues with rendering in mobile webview (also only seemed to be used to jump to a specific version of an artifact)
+        return url?.substringBeforeLast("#")
+    }
+
+    private fun formatCsvName(name: String?): String? {
+        return if (name?.contains(",") == true) "\"$name\"" else name
+    }
+
+    private fun generateLicenceReportHtml(poms: List<Pom>, outputFile: File) {
+        val dependenciesHtml = StringBuffer()
+        poms.forEach { pom ->
+            @Suppress("MaxLineLength") // html
+            @Language("HTML")
+            val dependencyHtml = """
+                <p>
+                    <strong>${pom.name ?: pom.artifactId}</strong><br/>
+                    
+                    ${if (pom.url != null) "<strong>URL: </strong><a href='${formatUrl(pom.url)}'>${formatUrl(pom.url)}</a><br/>" else ""}
+                     
+                    ${pom.licenses?.joinToString(separator = "<br/>") { license ->
+                        "<strong>License: </strong>${license.name} - ${if (license.url != null) "<a href='${formatUrl(license.url)}'>${formatUrl(license.url)}" else ""}</a>"    
+                    }} 
+                </p>
+                <hr/>
+                
+            """.trimIndent()
+
+            dependenciesHtml.append(dependencyHtml)
+        }
+
+        @Suppress("UnnecessaryVariable")
+        @Language("HTML")
+        val html = """
+                <html>
+                    <style>
+                        a { word-wrap: break-word;}
+                        strong { word-wrap: break-word;}
+                    </style>
+                    <body>
+                        $dependenciesHtml
+                    </body>
+                </html>
+        """.trimIndent()
+
+        // remove existing file
+        if (outputFile.exists()) {
+            outputFile.delete()
+        }
+
+        // write
+        outputFile.writeText(html)
+    }
+
     private fun generateLicenceReportJson(poms: List<Pom>, outputFile: File) {
         val dependencies = mutableListOf<LicenseReportDependency>()
 
         poms.forEach { pom ->
             val license = pom.licenses?.firstOrNull()
 
-            // # can cause issues with rendering in mobile webview (also only seemed to be used to jump to a specific version of an artifact)
-            val formattedPomUrl = pom.url?.substringBeforeLast("#")
+            val formattedPomUrl = formatUrl(pom.url)
 
             dependencies.add(
                 LicenseReportDependency(
@@ -228,12 +291,40 @@ open class ReportTask @Inject constructor(
             outputFile.delete()
         }
 
-        // write json
+        // write
         outputFile.writeText(json)
     }
 
-    private fun getOutputDir(): File {
-        val outputDir = File(extension.outputDir)
+    private fun generateLicenceReportCsv(poms: List<Pom>, outputFile: File) {
+        val dependenciesCsv = StringBuffer()
+        poms.forEach { pom ->
+            val license = pom.licenses?.firstOrNull()
+
+            val formattedPomUrl = formatUrl(pom.url)
+
+            dependenciesCsv
+                .append(formatCsvName(pom.name ?: pom.artifactId ?: "")).append(',')
+                .append(formattedPomUrl ?: "").append(',')
+                .append(pom.groupId ?: "").append(',')
+                .append(pom.artifactId ?: "").append(',')
+                .append(pom.version ?: "").append(',')
+                .append(formatCsvName(license?.name ?: "")).append(',')
+                .append(license?.url ?: "")
+                .append('\n')
+        }
+
+        // remove existing file
+        if (outputFile.exists()) {
+            outputFile.delete()
+        }
+
+        // write
+        outputFile.writeText(dependenciesCsv.toString())
+    }
+
+
+    private fun getOutputDir(pathname: String): File {
+        val outputDir = File(pathname)
         if (!outputDir.exists()) {
             outputDir.mkdirs()
         }
