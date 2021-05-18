@@ -25,7 +25,11 @@ plugins {
 }
 
 licenseManager {
-    // Need for Android projects only
+    createHtmlReport = true // default true
+    createJsonReport = true // default false
+    createCsvReport = true // default false
+
+    // Needed for Android projects only
     variantName = "release"
     
     // optional - default: ./build/licenses
