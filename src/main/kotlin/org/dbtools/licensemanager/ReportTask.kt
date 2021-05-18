@@ -12,7 +12,9 @@ import org.gradle.api.tasks.TaskAction
 import java.io.File
 import javax.inject.Inject
 
-
+/**
+ * LicenseManager Report Task
+ */
 open class ReportTask @Inject constructor(
     @get:Nested val extension: LicenseManagerExtension,
 ) : DefaultTask() {
