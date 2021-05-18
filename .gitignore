@@ -1,0 +1,25 @@
+# Temp files
+*~
+
+# Eclipse
+.settings
+.classpath
+.project
+.mymetadata
+
+# IDEA
+.idea/
+*.ipr
+*.iml
+*.iws
+
+#Gradle
+.gradle/
+build/
+local.properties
+
+# Android
+classes/
+bin/
+gen/
+/commit-changelog.txt
