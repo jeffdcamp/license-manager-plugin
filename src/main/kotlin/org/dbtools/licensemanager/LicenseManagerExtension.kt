@@ -26,6 +26,13 @@ open class LicenseManagerExtension @Inject constructor(
     var outputDir: String = defaultOutputDir
 
     /**
+     * Default output directory
+     */
+    @get:Optional
+    @get:Input
+    var outputDirs: List<String> = listOf(outputDir)
+
+    /**
      * Name of file without extension
      */
     @get:Input

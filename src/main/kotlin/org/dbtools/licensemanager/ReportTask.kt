@@ -35,16 +35,17 @@ open class ReportTask @Inject constructor(
     @TaskAction
     fun execute() {
         val poms = readPoms(false)
-
-        // Reports
-        if (extension.createHtmlReport) {
-            generateLicenceReportHtml(poms, File(getOutputDir(extension.outputDir), "${extension.outputFilename}.html"))
-        }
-        if (extension.createJsonReport) {
-            generateLicenceReportJson(poms, File(getOutputDir(extension.outputDir), "${extension.outputFilename}.json"))
-        }
-        if (extension.createCsvReport) {
-            generateLicenceReportCsv(poms, File(getOutputDir(extension.outputDir), "${extension.outputFilename}.csv"))
+        getOutputDirs(extension.outputDirs).forEach { dir ->
+            // Reports
+            if (extension.createHtmlReport) {
+                generateLicenceReportHtml(poms, File(dir, "${extension.outputFilename}.html"))
+            }
+            if (extension.createJsonReport) {
+                generateLicenceReportJson(poms, File(dir, "${extension.outputFilename}.json"))
+            }
+            if (extension.createCsvReport) {
+                generateLicenceReportCsv(poms, File(dir, "${extension.outputFilename}.csv"))
+            }
         }
     }
 
@@ -85,7 +86,7 @@ open class ReportTask @Inject constructor(
         }
 
         // sort
-        allPoms = allPoms.sortedBy { it.artifactId }
+        allPoms = allPoms.sortedBy { it.name ?: it.artifactId }
 
         return allPoms
     }
@@ -115,8 +116,7 @@ open class ReportTask @Inject constructor(
      * Work-in-progress....
      */
     private fun filterTransitiveDependencies(configuration: ResolvedConfiguration, allPoms: List<Pom>): List<Pom> {
-        val firstLevelModuleDependencies: MutableSet<ResolvedDependency> = configuration
-            .firstLevelModuleDependencies
+        val firstLevelModuleDependencies: MutableSet<ResolvedDependency> = configuration.firstLevelModuleDependencies
 
         firstLevelModuleDependencies.forEach { dependency ->
             println("   ${dependency.module.id}  / ${dependency.moduleName}")
@@ -222,36 +222,35 @@ open class ReportTask @Inject constructor(
         poms.forEach { pom ->
             @Suppress("MaxLineLength") // html
             @Language("HTML")
-            val dependencyHtml = """
-                <p>
-                    <strong>${pom.name ?: pom.artifactId}</strong><br/>
-                    
-                    ${if (pom.url != null) "<strong>URL: </strong><a href='${formatUrl(pom.url)}'>${formatUrl(pom.url)}</a><br/>" else ""}
-                     
-                    ${pom.licenses?.joinToString(separator = "<br/>") { license ->
-                        "<strong>License: </strong>${license.name} - ${if (license.url != null) "<a href='${formatUrl(license.url)}'>${formatUrl(license.url)}" else ""}</a>"    
-                    }} 
-                </p>
-                <hr/>
-                
-            """.trimIndent()
-
+            val dependencyHtml = buildString {
+                appendLine("<p>")
+                appendLine("    <strong>${pom.name ?: pom.artifactId}</strong><br/>")
+                pom.url?.let {
+                    appendLine("    <strong>URL: </strong><a href='${formatUrl(it)}'>${formatUrl(it)}</a><br/>")
+                }
+                val licenses = pom.licenses?.joinToString(separator = "<br/>") { license ->
+                    "    <strong>License: </strong>${license.name} - ${if (license.url != null) "<a href='${formatUrl(license.url)}'>${formatUrl(license.url)}" else ""}</a>"
+                }
+                licenses?.let { appendLine(it) }
+                appendLine("</p>")
+                appendLine("<hr/>")
+            }
             dependenciesHtml.append(dependencyHtml)
         }
 
         @Suppress("UnnecessaryVariable")
         @Language("HTML")
         val html = """
-                <html>
-                    <style>
-                        a { word-wrap: break-word;}
-                        strong { word-wrap: break-word;}
-                    </style>
-                    <body>
-                        $dependenciesHtml
-                    </body>
-                </html>
-        """.trimIndent()
+                |<html>
+                |    <style>
+                |        a { word-wrap: break-word;}
+                |        strong { word-wrap: break-word;}
+                |    </style>
+                |    <body>
+                |        $dependenciesHtml
+                |    </body>
+                |</html>
+                |""".trimMargin()
 
         // remove existing file
         if (outputFile.exists()) {
@@ -274,6 +273,7 @@ open class ReportTask @Inject constructor(
                 LicenseReportDependency(
                     moduleName = pom.name ?: pom.artifactId,
                     moduleUrl = formattedPomUrl,
+                    moduleGroupId = pom.groupId,
                     moduleArtifactId = pom.artifactId,
                     moduleVersion = pom.version,
                     moduleLicense = license?.name,
@@ -322,6 +322,9 @@ open class ReportTask @Inject constructor(
         outputFile.writeText(dependenciesCsv.toString())
     }
 
+    private fun getOutputDirs(pathnames: List<String>): List<File> {
+        return pathnames.map { getOutputDir(it) }
+    }
 
     private fun getOutputDir(pathname: String): File {
         val outputDir = File(pathname)
