@@ -11,6 +11,7 @@ data class LicenseReport(
 data class LicenseReportDependency(
     val moduleName: String? = null,
     val moduleUrl: String? = null,
+    val moduleGroupId: String? = null,
     val moduleArtifactId: String? = null,
     val moduleVersion: String? = null,
     val moduleLicense: String? = null,
