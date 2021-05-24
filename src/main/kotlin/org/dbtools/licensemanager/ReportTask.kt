@@ -3,6 +3,7 @@ package org.dbtools.licensemanager
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import kotlinx.serialization.json.Json
 import org.gradle.api.DefaultTask
+import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.artifacts.ResolvedConfiguration
@@ -327,12 +328,13 @@ open class ReportTask @Inject constructor(
     }
 
     private fun getOutputDir(pathname: String): File {
-        val outputDir = File(pathname)
+        // project.file is required for gradle to be able to create directories. (./gradlew clean createLicenses)
+        val outputDir = project.file(pathname)
         if (!outputDir.exists()) {
             outputDir.mkdirs()
         }
 
-        check(outputDir.exists()) { "Failed to create output directory: [${extension.outputDir}]" }
+        check(outputDir.exists()) { "Failed to create output directory: [${pathname}]" }
 
         return outputDir
     }
