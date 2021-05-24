@@ -33,12 +33,9 @@ licenseManager {
     variantName = "release"
     
     // optional - default: ./build/licenses
-    outputDir = "./app/src/main/assets"
-    
-    // optional
     outputDirs = listOf(
-        "./app/src/main/assets",
-        "./app/build/licenses"
+        "./src/main/assets",
+        "./build/licenses"
     )
     
     // optional - List of groupIds to be excluded

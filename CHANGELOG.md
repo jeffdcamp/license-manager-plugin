@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+Version 1.0.0-alpha04 *(2021-05)*
+-------------------------
+* Removed outputDir (use outputDirs instead)
+
 Version 1.0.0-alpha03 *(2021-05)*
 -------------------------
 * Improved support for clean build
