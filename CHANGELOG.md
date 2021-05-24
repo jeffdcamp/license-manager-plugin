@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+Version 1.0.0-alpha03 *(2021-05)*
+-------------------------
+* Improved support for clean build
+
 Version 1.0.0-alpha02 *(2021-05)*
 -------------------------
 * Cleanup HTML
