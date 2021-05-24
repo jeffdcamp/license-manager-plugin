@@ -16,5 +16,5 @@ object Pom {
     const val DEVELOPER_NAME = "Jeff Campbell"
 
     const val LIBRARY_NAME = "License Manager Gradle Plugin"
-    const val LIBRARY_ARTIFACT_ID = "licence-manager-gradle-plugin"
+    const val LIBRARY_ARTIFACT_ID = "license-manager-gradle-plugin"
 }
