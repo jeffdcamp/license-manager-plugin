@@ -9,7 +9,7 @@ buildscript {
     dependencies {
         classpath(kotlin("gradle-plugin", embeddedKotlinVersion))
         classpath("org.jetbrains.kotlin:kotlin-serialization:$embeddedKotlinVersion")
-        classpath("com.github.ben-manes:gradle-versions-plugin:0.38.0") // version plugin support
+        classpath("com.github.ben-manes:gradle-versions-plugin:0.39.0") // version plugin support
     }
 }
 
@@ -28,7 +28,7 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 }
 
 plugins {
-    id("com.github.ben-manes.versions") version "0.38.0"  // ./gradlew dependencyUpdates -Drevision=release
+    id("com.github.ben-manes.versions") version "0.39.0"  // ./gradlew dependencyUpdates -Drevision=release
     kotlin("plugin.serialization") version embeddedKotlinVersion
     `java-gradle-plugin`
     `kotlin-dsl`
@@ -42,7 +42,7 @@ repositories {
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$embeddedKotlinVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.1.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2")
 
     // xml parsing
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.12.3")
