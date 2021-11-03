@@ -3,7 +3,6 @@ package org.dbtools.licensemanager
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import kotlinx.serialization.json.Json
 import org.gradle.api.DefaultTask
-import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ResolvedArtifact
 import org.gradle.api.artifacts.ResolvedConfiguration
@@ -69,9 +68,15 @@ open class ReportTask @Inject constructor(
 
         // read/parse all pom.xml files
         val xmlMapper = XmlMapper()
-        var allPoms = artifacts.map { resolvedArtifact ->
+        var allPoms: List<Pom> = artifacts.mapNotNull { resolvedArtifact ->
             val pomFile = resolvedArtifact.file
-            xmlMapper.readValue(pomFile, Pom::class.java)
+            logger.info("Parsing pom.xml for artifact: ${pomFile.absoluteFile}")
+            try {
+                xmlMapper.readValue(pomFile, Pom::class.java)
+            } catch (e: Exception) {
+                logger.error("ERROR: Failed to parse pom file: [${pomFile.absoluteFile}]... (error: ${e.message})... skipping...")
+                null
+            }
         }
 
         // filters
