@@ -1,6 +1,15 @@
 Change Log
 ==========
 
+Version 1.1.0 *(2021-11)*
+-------------------------
+* Prevent crash of plugin if a non-pom file is provided from project.configurations.resolvedConfiguration (skip file)
+* Updated dependencies
+
+Version 1.0.0 *(2021-08)*
+-------------------------
+* Release 1.0.0
+
 Version 1.0.0-alpha04 *(2021-05)*
 -------------------------
 * Removed outputDir (use outputDirs instead)
