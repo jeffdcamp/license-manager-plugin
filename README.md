@@ -3,7 +3,7 @@ License Manager for Gradle projects
 
 License Manager is a library that makes generating a json file of all of a project dependecies easy.  
 
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.dbtools/licence-manager-gradle-plugin/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.dbtools/licence-manager-gradle-plugin)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.dbtools/license-manager-gradle-plugin/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.dbtools/license-manager-gradle-plugin)
 
 Install
 =======
@@ -16,7 +16,7 @@ buildscript {
     }
 
     dependencies {
-        classpath("org.dbtools:licence-manager-gradle-plugin:<latest-version-here>")
+        classpath("org.dbtools:license-manager-gradle-plugin:<latest-version-here>")
     }
 }
 
