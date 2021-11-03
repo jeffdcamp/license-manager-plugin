@@ -4,7 +4,8 @@ Change Log
 Version 1.1.0 *(2021-11)*
 -------------------------
 * Prevent crash of plugin if a non-pom file is provided from project.configurations.resolvedConfiguration (skip file)
-* Updated dependencies
+* Gradle 7.2
+* Updated other dependencies
 
 Version 1.0.0 *(2021-08)*
 -------------------------
