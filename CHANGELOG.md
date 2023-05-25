@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+Version 1.2.0 *(2023-05)*
+-------------------------
+* Added support for adding custom license text (customLicenses)
+* Added license-summary.html (show a grouping of licenses and what libraries are using it)
+* Added ability to fail task if an invalid license is being used (invalidLicenses )
+* Updated dependencies (Gradle 8.1.1)
+
 Version 1.1.0 *(2021-11)*
 -------------------------
 * Prevent crash of plugin if a non-pom file is provided from project.configurations.resolvedConfiguration (skip file)

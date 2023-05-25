@@ -46,6 +46,8 @@ open class ReportTask @Inject constructor(
             if (extension.createCsvReport) {
                 generateLicenceReportCsv(poms, File(dir, "${extension.outputFilename}.csv"))
             }
+
+            generateSummaryReportHtml(poms, File(dir, "license-summary.html"))
         }
     }
 
@@ -225,6 +227,17 @@ open class ReportTask @Inject constructor(
 
     private fun generateLicenceReportHtml(poms: List<Pom>, outputFile: File) {
         val dependenciesHtml = StringBuffer()
+
+        extension.customLicenses.forEach { customText ->
+            val customTextHtml = buildString {
+                appendLine("<p>")
+                appendLine(customText)
+                appendLine("</p>")
+                appendLine("<hr/>")
+            }
+            dependenciesHtml.append(customTextHtml)
+        }
+
         poms.forEach { pom ->
             @Suppress("MaxLineLength") // html
             @Language("HTML")
@@ -326,6 +339,88 @@ open class ReportTask @Inject constructor(
 
         // write
         outputFile.writeText(dependenciesCsv.toString())
+    }
+
+    private fun generateSummaryReportHtml(poms: List<Pom>, outputFile: File) {
+        val dependenciesHtml = StringBuffer()
+
+        // Key = License name
+        val allPomsByLicenseName = mutableMapOf<String, MutableList<Pom>>()
+        val pomLicenseByLicenseName = mutableMapOf<String, PomLicense>()
+
+        poms.forEach { pom ->
+            pom.licenses?.forEach { pomLicense ->
+                if (pomLicense.name != null) {
+                    pomLicenseByLicenseName[pomLicense.name] = pomLicense
+
+                    if (allPomsByLicenseName.contains(pomLicense.name)) {
+                        allPomsByLicenseName[pomLicense.name]?.add(pom)
+                    } else {
+                        allPomsByLicenseName[pomLicense.name] = mutableListOf(pom)
+                    }
+                }
+            }
+        }
+
+        allPomsByLicenseName.keys.forEach { licenseName ->
+            val dependencyHtml = buildString {
+                appendLine("<p>")
+                appendLine("    <strong>${licenseName}</strong><br/>")
+                if (pomLicenseByLicenseName[licenseName] != null) {
+                    appendLine("    ${pomLicenseByLicenseName[licenseName]?.url}<br/>")
+                }
+                appendLine("count: ${allPomsByLicenseName[licenseName]?.size ?: 0}")
+
+
+                allPomsByLicenseName[licenseName]?.forEach { pom ->
+                    if (!pom.name.isNullOrBlank()) {
+                        appendLine("<li>${pom.groupId}:${pom.artifactId} (${pom.name})</li>")
+                    } else {
+                        appendLine("<li>${pom.groupId}:${pom.artifactId}</li>")
+                    }
+                }
+                appendLine("</p>")
+                appendLine("<hr/>")
+            }
+            dependenciesHtml.append(dependencyHtml)
+        }
+
+        @Language("HTML")
+        val html = """
+                |<html>
+                |    <style>
+                |        a { word-wrap: break-word;}
+                |        strong { word-wrap: break-word;}
+                |    </style>
+                |    <body>
+                |        $dependenciesHtml
+                |    </body>
+                |</html>
+                |""".trimMargin()
+
+        // remove existing file
+        if (outputFile.exists()) {
+            outputFile.delete()
+        }
+
+        // write
+        outputFile.writeText(html)
+
+        // verify that there are not any blocked licenses
+        checkForBlockedLicense(pomLicenseByLicenseName, outputFile)
+    }
+
+    private fun checkForBlockedLicense(pomLicenseByLicenseName: MutableMap<String, PomLicense>, outputFile: File) {
+        if (extension.invalidLicenses.isEmpty()) {
+            return
+        }
+
+        val blockList = extension.invalidLicenses
+        val foundViolation = pomLicenseByLicenseName.keys.firstOrNull { item -> blockList.firstOrNull { blockListItem -> item.contains(blockListItem) } != null }
+        if (foundViolation != null) {
+            error("ERROR: [$foundViolation] is an INVALID license.  See ${outputFile.absolutePath}")
+        }
+
     }
 
     private fun getOutputDirs(pathnames: List<String>): List<File> {

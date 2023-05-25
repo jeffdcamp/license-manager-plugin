@@ -43,4 +43,15 @@ open class LicenseManagerExtension @Inject constructor(
 
     @get:Input
     var createCsvReport: Boolean = false
+
+    @get:Optional
+    @get:Input
+    var customLicenses: List<String> = emptyList()
+
+    /**
+     * List of text that will break the build if the license name contains these key words
+     */
+    @get:Optional
+    @get:Input
+    var invalidLicenses: List<String> = emptyList()
 }

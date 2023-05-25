@@ -9,26 +9,26 @@ buildscript {
     dependencies {
         classpath(kotlin("gradle-plugin", embeddedKotlinVersion))
         classpath("org.jetbrains.kotlin:kotlin-serialization:$embeddedKotlinVersion")
-        classpath("com.github.ben-manes:gradle-versions-plugin:0.39.0") // version plugin support
+        classpath("com.github.ben-manes:gradle-versions-plugin:0.46.0") // version plugin support
     }
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
 
     withJavadocJar()
 }
 
 // Kotlin Libraries targeting Java8 bytecode can cause the following error (such as okHttp 4.x):
-// "Cannot inline bytecode built with JVM target 1.8 into bytecode that is being built with JVM target 1.6. Please specify proper '-jvm-target' option"
+// "Cannot inline bytecode built with JVM target 1.8+ into bytecode that is being built with JVM target 1.6. Please specify proper '-jvm-target' option"
 // The following is added to allow the Kotlin Compiler to compile properly
 tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions.jvmTarget = "1.8"
+    kotlinOptions.jvmTarget = "17"
 }
 
 plugins {
-    id("com.github.ben-manes.versions") version "0.39.0"  // ./gradlew dependencyUpdates -Drevision=release
+    id("com.github.ben-manes.versions") version "0.46.0"  // ./gradlew dependencyUpdates -Drevision=release
     kotlin("plugin.serialization") version embeddedKotlinVersion
     `java-gradle-plugin`
     `kotlin-dsl`
@@ -42,13 +42,13 @@ repositories {
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$embeddedKotlinVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
 
     // xml parsing
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.13.0")
+    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.15.1")
 
     // Test
-    testImplementation("org.junit.jupiter:junit-jupiter:5.8.1")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
 }
 
 gradlePlugin {
