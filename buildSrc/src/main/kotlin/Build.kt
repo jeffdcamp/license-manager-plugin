@@ -1,6 +1,6 @@
 object Pom {
     const val GROUP_ID = "org.dbtools"
-    const val VERSION_NAME = "1.2.0"
+    const val VERSION_NAME = "1.2.1"
     const val POM_DESCRIPTION = "License Manager Gradle Plugin"
 
     const val URL = "https://github.com/jeffdcamp/license-manager-plugin/"

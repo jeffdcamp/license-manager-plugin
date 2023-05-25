@@ -1,6 +1,10 @@
 Change Log
 ==========
 
+Version 1.2.1 *(2023-05)*
+-------------------------
+* Minor fixes
+
 Version 1.2.0 *(2023-05)*
 -------------------------
 * Added support for adding custom license text (customLicenses)

@@ -260,7 +260,8 @@ open class ReportTask @Inject constructor(
         @Suppress("UnnecessaryVariable")
         @Language("HTML")
         val html = """
-                |<html>
+                |<!DOCTYPE html>
+                |<html lang="en">
                 |    <style>
                 |        a { word-wrap: break-word;}
                 |        strong { word-wrap: break-word;}
@@ -366,8 +367,10 @@ open class ReportTask @Inject constructor(
             val dependencyHtml = buildString {
                 appendLine("<p>")
                 appendLine("    <strong>${licenseName}</strong><br/>")
-                if (pomLicenseByLicenseName[licenseName] != null) {
-                    appendLine("    ${pomLicenseByLicenseName[licenseName]?.url}<br/>")
+
+                val pomLicenseUrl = pomLicenseByLicenseName[licenseName]?.url
+                if (pomLicenseUrl != null) {
+                    appendLine("    $pomLicenseUrl<br/>")
                 }
                 appendLine("count: ${allPomsByLicenseName[licenseName]?.size ?: 0}")
 
@@ -387,7 +390,8 @@ open class ReportTask @Inject constructor(
 
         @Language("HTML")
         val html = """
-                |<html>
+                |<!DOCTYPE html>
+                |<html lang="en">
                 |    <style>
                 |        a { word-wrap: break-word;}
                 |        strong { word-wrap: break-word;}
