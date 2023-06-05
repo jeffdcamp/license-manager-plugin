@@ -375,7 +375,7 @@ open class ReportTask @Inject constructor(
                 }
                 appendLine("count: ${allPomsByLicenseName[licenseName]?.size ?: 0}")
 
-
+                appendLine("<ul>")
                 allPomsByLicenseName[licenseName]?.forEach { pom ->
                     if (!pom.name.isNullOrBlank()) {
                         appendLine("<li>${pom.groupId}:${pom.artifactId} (${pom.name})</li>")
@@ -383,6 +383,7 @@ open class ReportTask @Inject constructor(
                         appendLine("<li>${pom.groupId}:${pom.artifactId}</li>")
                     }
                 }
+                appendLine("</ul>")
                 appendLine("</p>")
                 appendLine("<hr/>")
             }
