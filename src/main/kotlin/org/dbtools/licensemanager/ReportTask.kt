@@ -249,7 +249,13 @@ open class ReportTask @Inject constructor(
                     appendLine("    <strong>URL: </strong><a href='${formatUrl(it)}'>${formatUrl(it)}</a><br/>")
                 }
                 val licenses = pom.licenses?.joinToString(separator = "<br/>") { license ->
-                    "    <strong>License: </strong>${license.name} - ${if (license.url != null) "<a href='${formatUrl(license.url)}'>${formatUrl(license.url)}" else ""}</a>"
+                    "    <strong>License: </strong>${license.name} - ${
+                        if (license.url != null) "<a href='${
+                            formatUrl(
+                                license.url
+                            )
+                        }'>${formatUrl(license.url)}" else ""
+                    }</a>"
                 }
                 licenses?.let { appendLine(it) }
                 appendLine("</p>")
@@ -347,36 +353,38 @@ open class ReportTask @Inject constructor(
         val dependenciesHtml = StringBuffer()
 
         // Key = License name
-        val allPomsByLicenseName = mutableMapOf<String, MutableList<Pom>>()
-        val pomLicenseByLicenseName = mutableMapOf<String, PomLicense>()
+        val allPoms = mutableMapOf<String, MutableList<Pom>>()
+        val pomLicenses = mutableMapOf<String, PomLicense>()
 
         poms.forEach { pom ->
             pom.licenses?.forEach { pomLicense ->
-                if (pomLicense.name != null) {
-                    pomLicenseByLicenseName[pomLicense.name] = pomLicense
+                val key = pomLicense.url?.replace("http:", "https:") ?: pomLicense.name
+                if (key != null) {
+                    pomLicenses[key] = pomLicense
 
-                    if (allPomsByLicenseName.contains(pomLicense.name)) {
-                        allPomsByLicenseName[pomLicense.name]?.add(pom)
+                    if (allPoms.contains(key)) {
+                        allPoms[key]?.add(pom)
                     } else {
-                        allPomsByLicenseName[pomLicense.name] = mutableListOf(pom)
+                        allPoms[key] = mutableListOf(pom)
                     }
                 }
             }
         }
 
-        allPomsByLicenseName.keys.forEach { licenseName ->
+        allPoms.keys.forEach { key ->
             val dependencyHtml = buildString {
                 appendLine("<p>")
-                appendLine("    <strong>${licenseName}</strong><br/>")
+                val license = pomLicenses[key]
+                appendLine("    <strong>${license?.name ?: "UNKNOWN LICENSE"}</strong><br/>")
 
-                val pomLicenseUrl = pomLicenseByLicenseName[licenseName]?.url
-                if (pomLicenseUrl != null) {
-                    appendLine("    $pomLicenseUrl<br/>")
+                val url = license?.url
+                if (url != null) {
+                    appendLine("    $url<br/>")
                 }
-                appendLine("count: ${allPomsByLicenseName[licenseName]?.size ?: 0}")
+                appendLine("count: ${allPoms[key]?.size ?: 0}")
 
                 appendLine("<ul>")
-                allPomsByLicenseName[licenseName]?.forEach { pom ->
+                allPoms[key]?.forEach { pom ->
                     if (!pom.name.isNullOrBlank()) {
                         appendLine("<li>${pom.groupId}:${pom.artifactId} (${pom.name})</li>")
                     } else {
@@ -413,16 +421,20 @@ open class ReportTask @Inject constructor(
         outputFile.writeText(html)
 
         // verify that there are not any blocked licenses
-        checkForBlockedLicense(pomLicenseByLicenseName, outputFile)
+        checkForBlockedLicense(pomLicenses.values, outputFile)
     }
 
-    private fun checkForBlockedLicense(pomLicenseByLicenseName: MutableMap<String, PomLicense>, outputFile: File) {
+    private fun checkForBlockedLicense(pomLicenseByLicenseName: Collection<PomLicense>, outputFile: File) {
         if (extension.invalidLicenses.isEmpty()) {
             return
         }
 
         val blockList = extension.invalidLicenses
-        val foundViolation = pomLicenseByLicenseName.keys.firstOrNull { item -> blockList.firstOrNull { blockListItem -> item.contains(blockListItem) } != null }
+        val foundViolation = pomLicenseByLicenseName.firstOrNull { item ->
+            blockList.firstOrNull { blockListItem ->
+                item.name.orEmpty().contains(blockListItem)
+            } != null
+        }
         if (foundViolation != null) {
             error("ERROR: [$foundViolation] is an INVALID license.  See ${outputFile.absolutePath}")
         }
