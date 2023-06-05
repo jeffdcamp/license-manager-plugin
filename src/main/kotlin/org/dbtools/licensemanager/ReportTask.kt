@@ -46,7 +46,8 @@ open class ReportTask @Inject constructor(
             if (extension.createCsvReport) {
                 generateLicenceReportCsv(poms, File(dir, "${extension.outputFilename}.csv"))
             }
-
+        }
+        getOutputDirs(extension.summaryDirs).forEach { dir ->
             generateSummaryReportHtml(poms, File(dir, "license-summary.html"))
         }
     }
