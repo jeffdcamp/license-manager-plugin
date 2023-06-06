@@ -1,6 +1,13 @@
 Change Log
 ==========
 
+Version 1.3.0 *(2023-06)*
+-------------------------
+* Group Licenses by https url then by name if no url exists
+* Added support for shared Invalid Licenses list via invalidLicensesUrl
+* Wrap list items in a <ul></ul> tag
+* Separate Summary from Report in generation. This prevents accidental bundling of summary in app.
+
 Version 1.2.1 *(2023-05)*
 -------------------------
 * Minor fixes
