@@ -47,6 +47,9 @@ dependencies {
     // xml parsing
     implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.15.1")
 
+    // network
+    implementation("com.squareup.okhttp3:okhttp:4.11.0")
+
     // Test
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
 }

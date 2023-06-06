@@ -8,7 +8,8 @@ import javax.inject.Inject
  * Extension for LicenseManager plugin
  */
 open class LicenseManagerExtension @Inject constructor(
-    defaultOutputDir: String
+    defaultOutputDir: String,
+    defaultOutputWorkingDir: String
 ) {
     @get:Optional
     @get:Input
@@ -61,4 +62,16 @@ open class LicenseManagerExtension @Inject constructor(
     @get:Optional
     @get:Input
     var invalidLicenses: List<String> = emptyList()
+
+    @get:Optional
+    @get:Input
+    var invalidLicensesWorkingDir: String = defaultOutputWorkingDir
+
+    /**
+     * URL path to json file containing Json array of text that will break the build if the license name contains these keywords
+     * File content Example: ["GPL","GNU"]
+     */
+    @get:Optional
+    @get:Input
+    var invalidLicensesUrl: String? = null
 }

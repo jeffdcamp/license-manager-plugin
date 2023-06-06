@@ -2,6 +2,12 @@ package org.dbtools.licensemanager
 
 import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import kotlinx.serialization.json.Json
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okio.FileSystem
+import okio.IOException
+import okio.Path
+import okio.Path.Companion.toPath
 import org.gradle.api.DefaultTask
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ResolvedArtifact
@@ -26,6 +32,8 @@ open class ReportTask @Inject constructor(
         allowSpecialFloatingPointValues = true
         useArrayPolymorphism = true
     }
+
+    private val okHttpClient = OkHttpClient()
 
     init {
         group = "License"
@@ -425,11 +433,18 @@ open class ReportTask @Inject constructor(
     }
 
     private fun checkForBlockedLicense(pomLicenseByLicenseName: Collection<PomLicense>, outputFile: File) {
-        if (extension.invalidLicenses.isEmpty()) {
+        val remoteInvalidLicenses = if (!extension.invalidLicensesUrl.isNullOrBlank()) {
+            downloadAndReadInvalidLicensesUrl().orEmpty()
+        } else {
+            emptyList()
+        }
+
+        val buildConfigInvalidLicenses = extension.invalidLicenses
+        if (buildConfigInvalidLicenses.isEmpty()) {
             return
         }
 
-        val blockList = extension.invalidLicenses
+        val blockList = remoteInvalidLicenses + buildConfigInvalidLicenses
         val foundViolation = pomLicenseByLicenseName.firstOrNull { item ->
             blockList.firstOrNull { blockListItem ->
                 item.name.orEmpty().contains(blockListItem)
@@ -438,7 +453,43 @@ open class ReportTask @Inject constructor(
         if (foundViolation != null) {
             error("ERROR: [$foundViolation] is an INVALID license.  See ${outputFile.absolutePath}")
         }
+    }
 
+    private fun downloadAndReadInvalidLicensesUrl(): List<String>? {
+        // check to see if we have an url
+        val invalidLicensesUrl = extension.invalidLicensesUrl ?: return null
+        if (invalidLicensesUrl.isBlank()) {
+            return null
+        }
+
+        // setup local cache file
+        val fileSystem = FileSystem.SYSTEM
+        val workingInvalidDir: Path = extension.invalidLicensesWorkingDir.toPath()
+        val workingInvalidFile: Path = workingInvalidDir / "invalid-licenses-cache.json"
+
+        // try to read config from local file (cache), if it exists
+        if (fileSystem.exists(workingInvalidFile)) {
+            val contentTxt = fileSystem.read(workingInvalidFile) { readUtf8() }
+            return json.decodeFromString<List<String>>(contentTxt)
+        }
+
+        // local cache file does not exist, try to read from url
+        val request = Request.Builder()
+            .url(invalidLicensesUrl)
+            .build()
+
+        okHttpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw IOException("Unexpected code $response")
+            val bodyText = response.body?.string() ?: return null
+
+            val data = json.decodeFromString<List<String>>(bodyText)
+
+            // save to local cache
+            fileSystem.createDirectories(workingInvalidDir)
+            fileSystem.write(workingInvalidFile) { writeUtf8(bodyText) }
+
+            return data
+        }
     }
 
     private fun getOutputDirs(pathnames: List<String>): List<File> {

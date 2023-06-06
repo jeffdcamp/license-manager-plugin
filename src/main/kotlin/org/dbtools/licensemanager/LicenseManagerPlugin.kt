@@ -9,7 +9,11 @@ import org.gradle.kotlin.dsl.create
  */
 class LicenseManagerPlugin : Plugin<Project> {
     override fun apply(project: Project) {
-        val licenseManagerExtension = project.extensions.create<LicenseManagerExtension>(PLUGIN_EXTENSION_NAME, "${project.buildDir}/licenses")
+        val licenseManagerExtension = project.extensions.create<LicenseManagerExtension>(
+            PLUGIN_EXTENSION_NAME,
+            "${project.buildDir}/licenses",
+            "${project.buildDir}/licenses-working"
+        )
 
         project.tasks.create<ReportTask>("createLicenseReports", licenseManagerExtension)
     }
