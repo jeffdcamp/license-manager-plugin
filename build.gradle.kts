@@ -1,6 +1,21 @@
+// values should match version in buildSrc/../Build.kt
+group = "org.dbtools"
+version = "1.4.0"
 
-group = "org.jdc"
-version = "1.0-SNAPSHOT"
+// ./gradlew publishPlugins
+gradlePlugin {
+    website = "https://github.com/jeffdcamp/license-manager-plugin"
+    vcsUrl = "https://github.com/jeffdcamp/license-manager-plugin.git"
+    plugins {
+        create("licenseManager") {
+            id = "org.dbtools.license-manager"
+            displayName = "Plugin for building a list of dependency licenses"
+            description = "License Manager is a library that makes generating a json file of all of a project dependencies easy."
+            tags = listOf("dependency", "licenses")
+            implementationClass = "org.dbtools.licensemanager.LicenseManagerPlugin"
+        }
+    }
+}
 
 buildscript {
     repositories {
@@ -9,7 +24,6 @@ buildscript {
     dependencies {
         classpath(kotlin("gradle-plugin", embeddedKotlinVersion))
         classpath("org.jetbrains.kotlin:kotlin-serialization:$embeddedKotlinVersion")
-        classpath("com.github.ben-manes:gradle-versions-plugin:0.46.0") // version plugin support
     }
 }
 
@@ -28,7 +42,8 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
 }
 
 plugins {
-    id("com.github.ben-manes.versions") version "0.46.0"  // ./gradlew dependencyUpdates -Drevision=release
+    alias(libs.plugins.versions) // ./gradlew dependencyUpdates -Drevision=release
+    alias(libs.plugins.gradle.publish) // ./gradlew dependencyUpdates -Drevision=release
     kotlin("plugin.serialization") version embeddedKotlinVersion
     `java-gradle-plugin`
     `kotlin-dsl`
@@ -41,26 +56,20 @@ repositories {
 }
 
 dependencies {
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$embeddedKotlinVersion")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
+//    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$embeddedKotlinVersion")
+    implementation(libs.kotlin.serialization.json)
 
     // xml parsing
-    implementation("com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.15.1")
+    implementation(libs.jackson.xml)
 
     // network
-    implementation("com.squareup.okhttp3:okhttp:4.11.0")
+    implementation(platform(libs.okhttp.bom))
+    implementation(libs.okhttp)
 
     // Test
-    testImplementation("org.junit.jupiter:junit-jupiter:5.9.2")
-}
-
-gradlePlugin {
-    plugins {
-        create("licenseManager") {
-            id = "org.dbtools.license-manager"
-            implementationClass = "org.dbtools.licensemanager.LicenseManagerPlugin"
-        }
-    }
+    testImplementation(platform(libs.junit.bom))
+    testImplementation(libs.junit.jupiter)
+    testRuntimeOnly(libs.junit.engine)
 }
 
 // ./gradlew clean jar publishMavenPublicationToMavenLocal
@@ -113,6 +122,10 @@ publishing {
                 username = sonatypeNexusUsername ?: ""
                 password = sonatypeNexusPassword ?: ""
             }
+        }
+        maven {
+            name = "localPluginRepository"
+            url = uri("../local-plugin-repository")
         }
     }
 }

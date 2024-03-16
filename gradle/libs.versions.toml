@@ -1,0 +1,25 @@
+[versions]
+gradlePublish = "1.2.1"
+
+jacksonXml = "2.17.0"
+junit = "5.10.2"
+kotlinxSerialization = "1.6.3"
+okhttp = "4.12.0"
+
+versionsPlugin = "0.51.0"
+
+[plugins]
+gradle-publish = { id = "com.gradle.plugin-publish", version.ref = "gradlePublish" }
+versions = { id = "com.github.ben-manes.versions", version.ref = "versionsPlugin" }
+
+[libraries]
+jackson-xml = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-xml", version.ref = "jacksonXml" }
+
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-engine = { module = "org.junit.jupiter:junit-jupiter-engine" }
+
+kotlin-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
+
+okhttp-bom = { module = "com.squareup.okhttp3:okhttp-bom", version.ref = "okhttp" }
+okhttp = { module = "com.squareup.okhttp3:okhttp" }
