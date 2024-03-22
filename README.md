@@ -3,11 +3,20 @@ License Manager for Gradle projects
 
 License Manager is a library that makes generating a json file of all of a project dependencies easy.  
 
+[![gradlePluginPortal](https://img.shields.io/maven-metadata/v/https/plugins.gradle.org/m2/com/github/ben-manes/versions/com.github.ben-manes.versions.gradle.plugin/maven-metadata.xml.svg?label=gradlePluginPortal)](https://plugins.gradle.org/plugin/org.dbtools.license-manager)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.dbtools/license-manager-gradle-plugin/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.dbtools/license-manager-gradle-plugin)
 
 Install
 =======
 Android Example in build.gradle.kts
+
+```kotlin
+plugins {
+    id("org.dbtools.license-manager") version "$version"
+}
+```
+
+or
 
 ```kotlin
 buildscript {
@@ -23,7 +32,9 @@ buildscript {
 plugins {
     id("org.dbtools.license-manager")
 }
+```
 
+```kotlin
 licenseManager {
     createHtmlReport = true // default true
     createJsonReport = true // default false
@@ -53,7 +64,7 @@ Usage
 License
 =======
 
-    Copyright 2021 Jeff Campbell
+    Copyright 2021-2024 Jeff Campbell
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.

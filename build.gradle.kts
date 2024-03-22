@@ -2,6 +2,8 @@
 group = "org.dbtools"
 version = "1.4.0"
 
+// Publish to Gradle Plugins repo
+// https://docs.gradle.org/current/userguide/publishing_gradle_plugins.html
 // ./gradlew publishPlugins
 gradlePlugin {
     website = "https://github.com/jeffdcamp/license-manager-plugin"
