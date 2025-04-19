@@ -1,6 +1,6 @@
 // values should match version in buildSrc/../Build.kt
 group = "org.dbtools"
-version = "1.4.0"
+version = "1.5.0"
 
 // Publish to Gradle Plugins repo
 // https://docs.gradle.org/current/userguide/publishing_gradle_plugins.html
@@ -30,22 +30,15 @@ buildscript {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 
     withJavadocJar()
 }
 
-// Kotlin Libraries targeting Java8 bytecode can cause the following error (such as okHttp 4.x):
-// "Cannot inline bytecode built with JVM target 1.8+ into bytecode that is being built with JVM target 1.6. Please specify proper '-jvm-target' option"
-// The following is added to allow the Kotlin Compiler to compile properly
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions.jvmTarget = "17"
-}
-
 plugins {
     alias(libs.plugins.versions) // ./gradlew dependencyUpdates -Drevision=release
-    alias(libs.plugins.gradle.publish) // ./gradlew dependencyUpdates -Drevision=release
+    alias(libs.plugins.gradle.publish)
     kotlin("plugin.serialization") version embeddedKotlinVersion
     `java-gradle-plugin`
     `kotlin-dsl`
@@ -88,7 +81,7 @@ publishing {
             artifactId = Pom.LIBRARY_ARTIFACT_ID
             version = Pom.VERSION_NAME
             from(components["java"])
-            artifact(tasks["sourcesJar"])
+//            artifact(tasks["sourcesJar"])
             pom {
                 name.set(Pom.LIBRARY_NAME)
                 description.set(Pom.POM_DESCRIPTION)

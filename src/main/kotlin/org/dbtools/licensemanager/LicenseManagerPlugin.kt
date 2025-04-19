@@ -3,6 +3,7 @@ package org.dbtools.licensemanager
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.create
+import org.gradle.kotlin.dsl.register
 
 /**
  * LicenseManager plugin
@@ -15,7 +16,7 @@ class LicenseManagerPlugin : Plugin<Project> {
             "${project.buildDir}/licenses-working"
         )
 
-        project.tasks.create<ReportTask>("createLicenseReports", licenseManagerExtension)
+        project.tasks.register<ReportTask>("createLicenseReports", licenseManagerExtension)
     }
 
     companion object {
