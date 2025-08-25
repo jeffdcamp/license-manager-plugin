@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2025-08-25
+
+### Changed
+
+- Gradle 9.0.0
+- Fixed issue with invalidLicensesUrl not working if invalidLicenses was missing
+- Improved message if failed to download invalidLicensesUrl
+
 ## [1.5.0] - 2025-04-18
 
 ### Changed

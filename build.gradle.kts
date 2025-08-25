@@ -1,6 +1,6 @@
 // values should match version in buildSrc/../Build.kt
 group = "org.dbtools"
-version = "1.5.0"
+version = "1.6.0"
 
 // Publish to Gradle Plugins repo
 // https://docs.gradle.org/current/userguide/publishing_gradle_plugins.html
@@ -51,7 +51,6 @@ repositories {
 }
 
 dependencies {
-//    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$embeddedKotlinVersion")
     implementation(libs.kotlin.serialization.json)
 
     // xml parsing
