@@ -9,10 +9,7 @@ import okio.IOException
 import okio.Path
 import okio.Path.Companion.toPath
 import org.gradle.api.DefaultTask
-import org.gradle.api.artifacts.Configuration
-import org.gradle.api.artifacts.ResolvedArtifact
-import org.gradle.api.artifacts.ResolvedConfiguration
-import org.gradle.api.artifacts.ResolvedDependency
+import org.gradle.api.artifacts.*
 import org.gradle.api.tasks.Nested
 import org.gradle.api.tasks.TaskAction
 import org.intellij.lang.annotations.Language
@@ -195,9 +192,11 @@ open class ReportTask @Inject constructor(
                 getResolvedArtifactsFromResolvedDependencies(allDeps).forEach { artifact ->
                     val id = artifact.moduleVersion.id
                     val gav = "${id.group}:${id.name}:${id.version}@pom"
-                    configurations.getByName(POM_CONFIGURATION).dependencies.add(
-                        project.dependencies.add(POM_CONFIGURATION, gav)
-                    )
+                    val configuration: Configuration = configurations.getByName(POM_CONFIGURATION);
+                    val dependency: Dependency? = project.dependencies.add(POM_CONFIGURATION, gav)
+                    if (dependency != null) {
+                        configuration.dependencies.add(dependency)
+                    }
                 }
             }
         }
@@ -440,14 +439,15 @@ open class ReportTask @Inject constructor(
         }
 
         val buildConfigInvalidLicenses = extension.invalidLicenses
-        if (buildConfigInvalidLicenses.isEmpty()) {
+        val blockList = remoteInvalidLicenses + buildConfigInvalidLicenses
+
+        if (remoteInvalidLicenses.isEmpty() && buildConfigInvalidLicenses.isEmpty()) {
             return
         }
 
-        val blockList = remoteInvalidLicenses + buildConfigInvalidLicenses
-        val foundViolation = pomLicenseByLicenseName.firstOrNull { item ->
+        val foundViolation = pomLicenseByLicenseName.firstOrNull { pomLicense  ->
             blockList.firstOrNull { blockListItem ->
-                item.name.orEmpty().contains(blockListItem)
+                pomLicense.name.orEmpty().contains(blockListItem)
             } != null
         }
         if (foundViolation != null) {
@@ -479,7 +479,7 @@ open class ReportTask @Inject constructor(
             .build()
 
         okHttpClient.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) throw IOException("Unexpected code $response")
+            if (!response.isSuccessful) throw IOException("Failed to download invalidLicensesUrl file ($response)")
             val bodyText = response.body?.string() ?: return null
 
             val data = json.decodeFromString<List<String>>(bodyText)
