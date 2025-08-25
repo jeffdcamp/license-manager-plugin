@@ -1,5 +1,5 @@
 object Pom {
-    const val GROUP_ID = "org.dbtools"
+    const val GROUP_ID = "org.dbtools.license-manager"
     const val VERSION_NAME = "1.5.0" // should match version in build.gradle.kts
     const val POM_DESCRIPTION = "License Manager Gradle Plugin"
 
@@ -16,5 +16,5 @@ object Pom {
     const val DEVELOPER_NAME = "Jeff Campbell"
 
     const val LIBRARY_NAME = "License Manager Gradle Plugin"
-    const val LIBRARY_ARTIFACT_ID = "license-manager-gradle-plugin"
+    const val LIBRARY_ARTIFACT_ID = "org.dbtools.license-manager.gradle.plugin"
 }
