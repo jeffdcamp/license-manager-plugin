@@ -61,6 +61,11 @@ Usage
 
     ./gradlew createLicenseReports
 
+The `createLicenseReports` task is compatible with the [Gradle configuration cache](https://docs.gradle.org/current/userguide/configuration_cache.html).
+
+Dependencies are read from the project's `runtimeClasspath` configuration. For Android projects, set
+`variantName` so that the variant's runtime classpath (for example `releaseRuntimeClasspath`) is used instead.
+
 License
 =======
 

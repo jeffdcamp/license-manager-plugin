@@ -9,28 +9,77 @@ import okio.IOException
 import okio.Path
 import okio.Path.Companion.toPath
 import org.gradle.api.DefaultTask
-import org.gradle.api.artifacts.*
-import org.gradle.api.tasks.Nested
+import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.provider.ListProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.OutputDirectories
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
+import org.gradle.work.DisableCachingByDefault
 import org.intellij.lang.annotations.Language
 import java.io.File
-import javax.inject.Inject
 
 /**
  * LicenseManager Report Task
+ *
+ * Every input is a lazy property supplied by [LicenseManagerPlugin]; the task never touches
+ * [org.gradle.api.Project] at execution time, which is what makes it configuration cache compatible.
  */
-open class ReportTask @Inject constructor(
-    @get:Nested val extension: LicenseManagerExtension,
-) : DefaultTask() {
-    private val json = Json {
-        prettyPrint = true
-        isLenient = true
-        ignoreUnknownKeys = true
-        allowSpecialFloatingPointValues = true
-        useArrayPolymorphism = true
-    }
+@DisableCachingByDefault(because = "Reads a remote invalid-license list, so results are not reproducible from inputs alone")
+abstract class ReportTask : DefaultTask() {
 
-    private val okHttpClient = OkHttpClient()
+    /**
+     * pom.xml of every module on the runtime classpath, resolved lazily by the plugin.
+     */
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val pomFiles: ConfigurableFileCollection
+
+    @get:Input
+    abstract val excludeArtifactIds: ListProperty<String>
+
+    @get:Input
+    abstract val excludeGroups: ListProperty<String>
+
+    @get:Input
+    abstract val outputFilename: Property<String>
+
+    @get:Input
+    abstract val createHtmlReport: Property<Boolean>
+
+    @get:Input
+    abstract val createJsonReport: Property<Boolean>
+
+    @get:Input
+    abstract val createCsvReport: Property<Boolean>
+
+    @get:Input
+    abstract val customLicenses: ListProperty<String>
+
+    @get:Input
+    abstract val invalidLicenses: ListProperty<String>
+
+    @get:Input
+    @get:Optional
+    abstract val invalidLicensesUrl: Property<String>
+
+    @get:OutputDirectories
+    abstract val reportDirs: ConfigurableFileCollection
+
+    @get:OutputDirectories
+    abstract val summaryDirs: ConfigurableFileCollection
+
+    /**
+     * Local cache location for the downloaded [invalidLicensesUrl] content.
+     */
+    @get:Internal
+    abstract val invalidLicensesWorkingDir: DirectoryProperty
 
     init {
         group = "License"
@@ -39,45 +88,37 @@ open class ReportTask @Inject constructor(
 
     @TaskAction
     fun execute() {
-        val poms = readPoms(false)
-        getOutputDirs(extension.outputDirs).forEach { dir ->
+        val poms = readPoms()
+        val filename = outputFilename.get()
+
+        reportDirs.files.forEach { dir ->
+            dir.mkdirs()
+
             // Reports
-            if (extension.createHtmlReport) {
-                generateLicenceReportHtml(poms, File(dir, "${extension.outputFilename}.html"))
+            if (createHtmlReport.get()) {
+                generateLicenceReportHtml(poms, File(dir, "$filename.html"))
             }
-            if (extension.createJsonReport) {
-                generateLicenceReportJson(poms, File(dir, "${extension.outputFilename}.json"))
+            if (createJsonReport.get()) {
+                generateLicenceReportJson(poms, File(dir, "$filename.json"))
             }
-            if (extension.createCsvReport) {
-                generateLicenceReportCsv(poms, File(dir, "${extension.outputFilename}.csv"))
+            if (createCsvReport.get()) {
+                generateLicenceReportCsv(poms, File(dir, "$filename.csv"))
             }
         }
-        getOutputDirs(extension.summaryDirs).forEach { dir ->
+        summaryDirs.files.forEach { dir ->
+            dir.mkdirs()
             generateSummaryReportHtml(poms, File(dir, "license-summary.html"))
         }
     }
 
-    private fun readPoms(filterTransitive: Boolean): List<Pom> {
-        // setup pom configuration
-        createPomConfiguration()
+    private fun readPoms(): List<Pom> {
+        val pomFileList = pomFiles.files
 
-        // add all dependencies to pom configuration
-        findAllDependencies()
-
-        // get created pom configuration
-        val configuration = project.configurations
-            .getByName(POM_CONFIGURATION)
-            .resolvedConfiguration
-
-        // get all artifacts
-        val artifacts = configuration.lenientConfiguration.artifacts
-
-        logger.info("Found Artifact Dependencies count: ${artifacts.size}")
+        logger.info("Found Artifact Dependencies count: ${pomFileList.size}")
 
         // read/parse all pom.xml files
         val xmlMapper = XmlMapper()
-        var allPoms: List<Pom> = artifacts.mapNotNull { resolvedArtifact ->
-            val pomFile = resolvedArtifact.file
+        var allPoms: List<Pom> = pomFileList.mapNotNull { pomFile ->
             logger.info("Parsing pom.xml for artifact: ${pomFile.absoluteFile}")
             try {
                 xmlMapper.readValue(pomFile, Pom::class.java)
@@ -88,140 +129,20 @@ open class ReportTask @Inject constructor(
         }
 
         // filters
-        if (filterTransitive) {
-            allPoms = filterTransitiveDependencies(configuration, allPoms)
-        }
-        if (extension.excludeGroups.isNotEmpty()) {
-            allPoms = filterExcludedGroups(allPoms)
+        val filterGroups = excludeGroups.get()
+        if (filterGroups.isNotEmpty()) {
+            allPoms = allPoms.filter { pom -> !filterGroups.contains(pom.groupId) }
         }
 
-        if (extension.excludeArtifactIds.isNotEmpty()) {
-            allPoms = filterExcludedArtifactIds(allPoms)
+        val filterArtifactIds = excludeArtifactIds.get()
+        if (filterArtifactIds.isNotEmpty()) {
+            allPoms = allPoms.filter { pom -> !filterArtifactIds.contains(pom.artifactId) }
         }
 
         // sort
         allPoms = allPoms.sortedBy { it.name ?: it.artifactId }
 
         return allPoms
-    }
-
-
-    /**
-     * Exclude specified GroupIds
-     */
-    private fun filterExcludedGroups(allPoms: List<Pom>): List<Pom> {
-        val filterGroups = extension.excludeGroups
-        return allPoms.filter { pom ->
-            !filterGroups.contains(pom.groupId)
-        }
-    }
-
-    /**
-     * Exclude specified GroupIds
-     */
-    private fun filterExcludedArtifactIds(allPoms: List<Pom>): List<Pom> {
-        val filterArtifactIds = extension.excludeArtifactIds
-        return allPoms.filter { pom ->
-            !filterArtifactIds.contains(pom.artifactId)
-        }
-    }
-
-    /**
-     * Work-in-progress....
-     */
-    private fun filterTransitiveDependencies(configuration: ResolvedConfiguration, allPoms: List<Pom>): List<Pom> {
-        val firstLevelModuleDependencies: MutableSet<ResolvedDependency> = configuration.firstLevelModuleDependencies
-
-        firstLevelModuleDependencies.forEach { dependency ->
-            println("   ${dependency.module.id}  / ${dependency.moduleName}")
-
-        }
-
-        return allPoms
-            .filter { pom ->
-//                println("     ${pom.artifactId}")
-                firstLevelModuleDependencies.any { dependency ->
-                    pom.artifactId == dependency.moduleName && pom.groupId == dependency.moduleGroup && pom.version == dependency.moduleVersion
-                }
-            }
-    }
-
-    private fun createPomConfiguration() {
-        project.configurations.apply {
-            create(POM_CONFIGURATION)
-            forEach { configuration ->
-                try {
-                    configuration.isCanBeResolved = true
-                } catch (ignored: Exception) {
-                }
-            }
-        }
-    }
-
-    /**
-     * Go through all configurations and add dependencies
-     */
-    private fun findAllDependencies() {
-        val configurationSet = linkedSetOf<Configuration>()
-        val configurations = project.configurations
-
-        // add "compile" configuration older java and android gradle plugins
-        configurations.find { it.name == "compile" }?.let {
-            configurationSet.add(configurations.getByName("compile"))
-        }
-
-        // add "api" and "implementation" configurations for newer java-library and android gradle plugins
-        configurations.find { it.name == "api" }?.let {
-            configurationSet.add(configurations.getByName("api"))
-        }
-        configurations.find { it.name == "implementation" }?.let {
-            configurationSet.add(configurations.getByName("implementation"))
-        }
-
-        // Android project configuration
-        extension.variantName?.let { variant ->
-            configurations.find { it.name == "${variant}RuntimeClasspath" }?.also {
-                configurationSet.add(it)
-            }
-        }
-
-        // cycle through all configuration dependencies
-        configurationSet.forEach { configuration ->
-            if (configuration.isCanBeResolved) {
-                val allDeps = configuration.resolvedConfiguration.lenientConfiguration.allModuleDependencies
-                getResolvedArtifactsFromResolvedDependencies(allDeps).forEach { artifact ->
-                    val id = artifact.moduleVersion.id
-                    val gav = "${id.group}:${id.name}:${id.version}@pom"
-                    val configuration: Configuration = configurations.getByName(POM_CONFIGURATION);
-                    val dependency: Dependency? = project.dependencies.add(POM_CONFIGURATION, gav)
-                    if (dependency != null) {
-                        configuration.dependencies.add(dependency)
-                    }
-                }
-            }
-        }
-    }
-
-    private fun getResolvedArtifactsFromResolvedDependencies(resolvedDependencies: Set<ResolvedDependency>): Set<ResolvedArtifact> {
-        val resolvedArtifacts = hashSetOf<ResolvedArtifact>()
-        resolvedDependencies.forEach { resolvedDependency ->
-            try {
-                if (resolvedDependency.moduleVersion == "unspecified") {
-                    /**
-                     * Attempting to getAllModuleArtifacts on a local library project will result
-                     * in AmbiguousVariantSelectionException as there are not enough criteria
-                     * to match a specific variant of the library project. Instead we skip the
-                     * the library project itself and enumerate its dependencies.
-                     */
-                    resolvedArtifacts.addAll(getResolvedArtifactsFromResolvedDependencies(resolvedDependency.children))
-                } else {
-                    resolvedArtifacts.addAll(resolvedDependency.allModuleArtifacts)
-                }
-            } catch (e: Exception) {
-                logger.warn("Failed to process $resolvedDependency.name", e)
-            }
-        }
-        return resolvedArtifacts
     }
 
     private fun formatUrl(url: String?): String? {
@@ -236,7 +157,7 @@ open class ReportTask @Inject constructor(
     private fun generateLicenceReportHtml(poms: List<Pom>, outputFile: File) {
         val dependenciesHtml = StringBuffer()
 
-        extension.customLicenses.forEach { customText ->
+        customLicenses.get().forEach { customText ->
             val customTextHtml = buildString {
                 appendLine("<p>")
                 appendLine(customText)
@@ -318,7 +239,7 @@ open class ReportTask @Inject constructor(
 
         val licenseReport = LicenseReport(dependencies)
 
-        val json = json.encodeToString(LicenseReport.serializer(), licenseReport)
+        val jsonText = json.encodeToString(LicenseReport.serializer(), licenseReport)
 
         // remove existing file
         if (outputFile.exists()) {
@@ -326,7 +247,7 @@ open class ReportTask @Inject constructor(
         }
 
         // write
-        outputFile.writeText(json)
+        outputFile.writeText(jsonText)
     }
 
     private fun generateLicenceReportCsv(poms: List<Pom>, outputFile: File) {
@@ -432,20 +353,20 @@ open class ReportTask @Inject constructor(
     }
 
     private fun checkForBlockedLicense(pomLicenseByLicenseName: Collection<PomLicense>, outputFile: File) {
-        val remoteInvalidLicenses = if (!extension.invalidLicensesUrl.isNullOrBlank()) {
+        val remoteInvalidLicenses = if (!invalidLicensesUrl.orNull.isNullOrBlank()) {
             downloadAndReadInvalidLicensesUrl().orEmpty()
         } else {
             emptyList()
         }
 
-        val buildConfigInvalidLicenses = extension.invalidLicenses
+        val buildConfigInvalidLicenses = invalidLicenses.get()
         val blockList = remoteInvalidLicenses + buildConfigInvalidLicenses
 
         if (remoteInvalidLicenses.isEmpty() && buildConfigInvalidLicenses.isEmpty()) {
             return
         }
 
-        val foundViolation = pomLicenseByLicenseName.firstOrNull { pomLicense  ->
+        val foundViolation = pomLicenseByLicenseName.firstOrNull { pomLicense ->
             blockList.firstOrNull { blockListItem ->
                 pomLicense.name.orEmpty().contains(blockListItem)
             } != null
@@ -457,14 +378,14 @@ open class ReportTask @Inject constructor(
 
     private fun downloadAndReadInvalidLicensesUrl(): List<String>? {
         // check to see if we have an url
-        val invalidLicensesUrl = extension.invalidLicensesUrl ?: return null
+        val invalidLicensesUrl = invalidLicensesUrl.orNull ?: return null
         if (invalidLicensesUrl.isBlank()) {
             return null
         }
 
         // setup local cache file
         val fileSystem = FileSystem.SYSTEM
-        val workingInvalidDir: Path = extension.invalidLicensesWorkingDir.toPath()
+        val workingInvalidDir: Path = invalidLicensesWorkingDir.get().asFile.path.toPath()
         val workingInvalidFile: Path = workingInvalidDir / "invalid-licenses-cache.json"
 
         // try to read config from local file (cache), if it exists
@@ -478,37 +399,35 @@ open class ReportTask @Inject constructor(
             .url(invalidLicensesUrl)
             .build()
 
-        okHttpClient.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) throw IOException("Failed to download invalidLicensesUrl file ($response)")
-            val bodyText = response.body?.string() ?: return null
+        // Created per invocation: an OkHttpClient held in a task field cannot be stored in the configuration cache
+        val okHttpClient = OkHttpClient()
+        try {
+            okHttpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) throw IOException("Failed to download invalidLicensesUrl file ($response)")
+                val bodyText = response.body?.string() ?: return null
 
-            val data = json.decodeFromString<List<String>>(bodyText)
+                val data = json.decodeFromString<List<String>>(bodyText)
 
-            // save to local cache
-            fileSystem.createDirectories(workingInvalidDir)
-            fileSystem.write(workingInvalidFile) { writeUtf8(bodyText) }
+                // save to local cache
+                fileSystem.createDirectories(workingInvalidDir)
+                fileSystem.write(workingInvalidFile) { writeUtf8(bodyText) }
 
-            return data
+                return data
+            }
+        } finally {
+            okHttpClient.dispatcher.executorService.shutdown()
+            okHttpClient.connectionPool.evictAll()
         }
-    }
-
-    private fun getOutputDirs(pathnames: List<String>): List<File> {
-        return pathnames.map { getOutputDir(it) }
-    }
-
-    private fun getOutputDir(pathname: String): File {
-        // project.file is required for gradle to be able to create directories. (./gradlew clean createLicenses)
-        val outputDir = project.file(pathname)
-        if (!outputDir.exists()) {
-            outputDir.mkdirs()
-        }
-
-        check(outputDir.exists()) { "Failed to create output directory: [${pathname}]" }
-
-        return outputDir
     }
 
     companion object {
-        private const val POM_CONFIGURATION = "pom"
+        // held statically so that it is never part of the task state written to the configuration cache
+        private val json = Json {
+            prettyPrint = true
+            isLenient = true
+            ignoreUnknownKeys = true
+            allowSpecialFloatingPointValues = true
+            useArrayPolymorphism = true
+        }
     }
 }
