@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-08-08
+
 ### Added
 
 - Support for the Gradle configuration cache. `createLicenseReports` no longer touches `Task.project` at
@@ -21,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `licenseManager` extension values are now lazy Gradle properties. The existing `foo = value` DSL syntax is
   unchanged, but reading these values from a build script now requires `.get()`.
 - Removed the unused work-in-progress transitive dependency filter.
+- Gradle 9.7.0
+- Updated dependencies (plugin-publish 2.1.1, Jackson 2.22.1, JUnit 6.1.3, kotlinx.serialization 1.11.0,
+  OkHttp 5.4.0)
 
 ## [1.6.0] - 2025-08-25
 

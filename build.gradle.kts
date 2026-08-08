@@ -1,6 +1,6 @@
 // values should match version in buildSrc/../Build.kt
 group = "org.dbtools"
-version = "1.6.0"
+version = "2.0.0"
 
 // Publish to Gradle Plugins repo
 // https://docs.gradle.org/current/userguide/publishing_gradle_plugins.html
