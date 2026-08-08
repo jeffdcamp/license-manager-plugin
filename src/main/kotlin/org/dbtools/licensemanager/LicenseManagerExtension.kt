@@ -1,77 +1,59 @@
 package org.dbtools.licensemanager
 
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.Optional
-import javax.inject.Inject
+import org.gradle.api.provider.ListProperty
+import org.gradle.api.provider.Property
 
 /**
  * Extension for LicenseManager plugin
+ *
+ * All values are lazy [Property]/[ListProperty] instances so that the plugin never has to read them
+ * eagerly while the build is still being configured. This is what allows [ReportTask] to be wired up
+ * with configuration cache compatible inputs.
  */
-open class LicenseManagerExtension @Inject constructor(
-    defaultOutputDir: String,
-    defaultOutputWorkingDir: String
-) {
-    @get:Optional
-    @get:Input
-    var excludeArtifactIds: List<String> = emptyList()
+abstract class LicenseManagerExtension {
+    abstract val excludeArtifactIds: ListProperty<String>
 
-    @get:Optional
-    @get:Input
-    var excludeGroups: List<String> = emptyList()
+    abstract val excludeGroups: ListProperty<String>
 
     /**
-     * Default output directory
+     * Output directories for the reports. Default: <buildDir>/licenses
      */
-    @get:Optional
-    @get:Input
-    var outputDirs: List<String> = listOf(defaultOutputDir)
+    abstract val outputDirs: ListProperty<String>
 
     /**
-     * Default summary directory
+     * Output directories for the license summary. Default: <buildDir>/licenses
      */
-    @get:Optional
-    @get:Input
-    var summaryDirs: List<String> = listOf(defaultOutputDir)
+    abstract val summaryDirs: ListProperty<String>
 
     /**
      * Name of file without extension
      */
-    @get:Input
-    var outputFilename: String = "licenses"
+    abstract val outputFilename: Property<String>
 
-    @get:Optional
-    @get:Input
-    var variantName: String? = null
+    /**
+     * Android variant whose runtime classpath should be inspected (example: "release").
+     * When unset, the project's "runtimeClasspath" configuration is used.
+     */
+    abstract val variantName: Property<String>
 
-    @get:Input
-    var createHtmlReport: Boolean = true
+    abstract val createHtmlReport: Property<Boolean>
 
-    @get:Input
-    var createJsonReport: Boolean = false
+    abstract val createJsonReport: Property<Boolean>
 
-    @get:Input
-    var createCsvReport: Boolean = false
+    abstract val createCsvReport: Property<Boolean>
 
-    @get:Optional
-    @get:Input
-    var customLicenses: List<String> = emptyList()
+    abstract val customLicenses: ListProperty<String>
 
     /**
      * List of text that will break the build if the license name contains these key words
      */
-    @get:Optional
-    @get:Input
-    var invalidLicenses: List<String> = emptyList()
+    abstract val invalidLicenses: ListProperty<String>
 
-    @get:Optional
-    @get:Input
-    var invalidLicensesWorkingDir: String = defaultOutputWorkingDir
+    abstract val invalidLicensesWorkingDir: Property<String>
 
     /**
      * URL path to json file containing Json array of text that will break the build if the license name contains these keywords
      * File content Example: ["GPL","GNU"]
      */
-    @get:Optional
-    @get:Input
-    var invalidLicensesUrl: String? = null
+    abstract val invalidLicensesUrl: Property<String>
 }

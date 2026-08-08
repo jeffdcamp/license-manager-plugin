@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Support for the Gradle configuration cache. `createLicenseReports` no longer touches `Task.project` at
+  execution time, so it works with `--configuration-cache` (required as of Gradle 10).
+- `createLicenseReports` now declares its outputs, so it can be up-to-date instead of re-running every build.
+
+### Changed
+
+- Dependencies are now collected from the project's `runtimeClasspath` configuration (or
+  `<variantName>RuntimeClasspath` when `variantName` is set) instead of forcing `implementation` to be
+  resolvable. This fixes empty reports on Gradle 9, where forcing `canBeResolved` on `implementation` fails.
+- `licenseManager` extension values are now lazy Gradle properties. The existing `foo = value` DSL syntax is
+  unchanged, but reading these values from a build script now requires `.get()`.
+- Removed the unused work-in-progress transitive dependency filter.
+
 ## [1.6.0] - 2025-08-25
 
 ### Changed
