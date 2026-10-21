@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-10-21
+
+### Changed
+
+- Gradle 9.8.2
+- Updated dependencies (Jackson 2.22.4, OkHttp 5.5.0, kotlinx.serialization 1.12.0, plugin-publish 2.2.1,
+  versions 0.66.0)
+
+### Security
+
+- Jackson 2.22.4 pulls in jackson-databind 2.22.4, which fixes GHSA-cxp5-3px4-pw24, GHSA-wv8q-qhhj-9h54,
+  GHSA-q4xh-88c3-wmh7, GHSA-gx83-3vf8-gh7j and GHSA-wjgm-6hv5-3cvf
+
 ## [2.0.0] - 2026-08-08
 
 ### Added

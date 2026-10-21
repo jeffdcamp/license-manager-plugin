@@ -1,6 +1,6 @@
 object Pom {
     const val GROUP_ID = "org.dbtools.license-manager"
-    const val VERSION_NAME = "2.0.0" // should match version in build.gradle.kts
+    const val VERSION_NAME = "2.1.0" // should match version in build.gradle.kts
     const val POM_DESCRIPTION = "License Manager Gradle Plugin"
 
     const val URL = "https://github.com/jeffdcamp/license-manager-plugin/"
