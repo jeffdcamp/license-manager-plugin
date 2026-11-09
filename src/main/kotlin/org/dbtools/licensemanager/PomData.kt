@@ -15,7 +15,17 @@ data class Pom(
     val organization: PomOrganization? = null,
     val developers: List<PomDevelopers>? = null,
 //    val dependencies: List<PomDependencies>? = null,
-    val scm: PomScm? = null
+    val scm: PomScm? = null,
+    val parent: PomParent? = null,
+    /** values are normally Strings; nested elements (rare) come through as maps and are ignored */
+    val properties: Map<String, Any?>? = null
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class PomParent(
+    val groupId: String? = null,
+    val artifactId: String? = null,
+    val version: String? = null
 )
 
 @JsonIgnoreProperties(ignoreUnknown = true)

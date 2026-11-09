@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Values inherited from a parent pom are now included. Previously, dependencies such as `org.brotli:dec`
+  (pulled in by `okhttp-brotli`), Guava, SLF4J and ZXing were reported with no license or URL, and
+  dependencies such as Gson had a `null` groupId (which also kept `excludeGroups` from matching them).
+- `${...}` placeholders in pom values (for example `<name>${project.groupId}:${project.artifactId}</name>`)
+  are now resolved instead of being written to the reports literally.
+
+### Changed
+
+- Removed the deprecated `Configuration.isVisible` call (no effect since Gradle 9, removed in Gradle 11).
+
 ## [2.1.0] - 2026-10-21
 
 ### Changed

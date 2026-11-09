@@ -66,6 +66,9 @@ The `createLicenseReports` task is compatible with the [Gradle configuration cac
 Dependencies are read from the project's `runtimeClasspath` configuration. For Android projects, set
 `variantName` so that the variant's runtime classpath (for example `releaseRuntimeClasspath`) is used instead.
 
+Values a pom inherits from its `<parent>` chain (licenses, url, groupId, ...) are included, and `${...}`
+placeholders such as `${project.artifactId}` are resolved, just as Maven builds the effective pom.
+
 License
 =======
 

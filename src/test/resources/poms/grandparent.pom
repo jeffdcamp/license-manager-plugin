@@ -1,0 +1,17 @@
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.example</groupId>
+  <artifactId>grandparent</artifactId>
+  <version>7</version>
+  <packaging>pom</packaging>
+  <url>https://example.com</url>
+  <properties>
+    <license.host>licenses.example.com</license.host>
+  </properties>
+  <licenses>
+    <license>
+      <name>Example License ${license.version}</name>
+      <url>https://${license.host}/${project.artifactId}</url>
+    </license>
+  </licenses>
+</project>

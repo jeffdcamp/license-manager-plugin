@@ -64,6 +64,7 @@ dependencies {
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.engine)
+    testRuntimeOnly(libs.junit.platform.launcher)
 }
 
 // ./gradlew clean jar publishMavenPublicationToMavenLocal
@@ -126,4 +127,8 @@ publishing {
 
 signing {
     sign(publishing.publications["maven"])
+}
+
+tasks.test {
+    useJUnitPlatform()
 }

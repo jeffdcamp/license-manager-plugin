@@ -10,6 +10,7 @@ import org.gradle.api.file.FileCollection
 import org.gradle.api.provider.Provider
 import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.register
+import java.io.File
 
 /**
  * LicenseManager plugin
@@ -35,9 +36,11 @@ class LicenseManagerPlugin : Plugin<Project> {
         // must be created eagerly: it registers an afterEvaluate action, which is illegal once the
         // configuration phase has moved on to realizing tasks
         val pomFileCollection = createPomFileCollection(project, extension)
+        val parentPomFileCollection = createParentPomFileCollection(project, pomFileCollection)
 
         project.tasks.register<ReportTask>("createLicenseReports") {
             pomFiles.from(pomFileCollection)
+            parentPomFiles.from(parentPomFileCollection)
 
             excludeArtifactIds.convention(extension.excludeArtifactIds)
             excludeGroups.convention(extension.excludeGroups)
@@ -69,7 +72,6 @@ class LicenseManagerPlugin : Plugin<Project> {
         val pomConfiguration = project.configurations.create(POM_CONFIGURATION) {
             isCanBeConsumed = false
             isCanBeResolved = true
-            isVisible = false
             // each pom is requested explicitly, so there is nothing to walk transitively
             isTransitive = false
         }
@@ -101,6 +103,62 @@ class LicenseManagerPlugin : Plugin<Project> {
         // lenient so that a module without a published pom does not fail the build
         return pomConfiguration.incoming.artifactView { isLenient = true }.files
     }
+
+    /**
+     * Resolve the `<parent>` chain of [pomFiles] (up to [MAX_PARENT_DEPTH] levels) and return all parent pom.xml files.
+     *
+     * Parent coordinates are only known after a pom has been downloaded, so each level's dependencies are supplied
+     * lazily from the files of the level below. Like [createPomFileCollection], nothing is resolved unless the report
+     * task actually runs, and only configuration cache safe objects are captured.
+     *
+     * A configuration can only hold one version of a module (conflict resolution would turn
+     * `guava-parent:26.0-android` into `guava-parent:33.4.0-jre`), so every level is split into
+     * [PARENT_VERSION_SLOTS] configurations: slot N holds the Nth version of each parent module.
+     */
+    private fun createParentPomFileCollection(project: Project, pomFiles: FileCollection): FileCollection {
+        val dependencyFactory = project.dependencyFactory
+        val allParentPomFiles = project.objects.fileCollection()
+
+        var childPomFiles: FileCollection = pomFiles
+        for (level in 1..MAX_PARENT_DEPTH) {
+            val parentCoordinatesBySlot = childPomFiles.elements.map { locations ->
+                locations
+                    .mapNotNull { location -> readParentCoordinates(location.asFile) }
+                    .distinct()
+                    .groupBy { it.substringBeforeLast(':') } // group:artifact
+                    .values
+                    .flatMap { versions -> versions.sorted().withIndex() }
+                    .groupBy({ it.index }, { it.value })
+            }
+
+            val levelPomFiles = project.objects.fileCollection()
+            for (slot in 0 until PARENT_VERSION_SLOTS) {
+                val parentConfiguration = project.configurations.create("$PARENT_POM_CONFIGURATION_PREFIX${level}Slot$slot") {
+                    isCanBeConsumed = false
+                    isCanBeResolved = true
+                    isTransitive = false
+                }
+                parentConfiguration.dependencies.addAllLater(
+                    parentCoordinatesBySlot.map { bySlot ->
+                        bySlot[slot].orEmpty().map { coordinates -> dependencyFactory.create("$coordinates@pom") }
+                    }
+                )
+                levelPomFiles.from(parentConfiguration.incoming.artifactView { isLenient = true }.files)
+            }
+
+            allParentPomFiles.from(levelPomFiles)
+            childPomFiles = levelPomFiles
+        }
+
+        return allParentPomFiles
+    }
+
+    private fun readParentCoordinates(pomFile: File): String? =
+        try {
+            PomResolver.parentCoordinates(PomResolver.parse(pomFile))
+        } catch (@Suppress("SwallowedException") e: Exception) {
+            null // ReportTask reports unparseable poms
+        }
 
     private fun findRuntimeClasspath(project: Project, variantName: String?): Configuration? {
         val candidateNames = buildList {
@@ -144,5 +202,12 @@ class LicenseManagerPlugin : Plugin<Project> {
     companion object {
         const val PLUGIN_EXTENSION_NAME = "licenseManager"
         private const val POM_CONFIGURATION = "pom"
+        private const val PARENT_POM_CONFIGURATION_PREFIX = "pomParents"
+
+        /** deep enough for real-world chains (e.g. module -> project parent -> org parent -> apache parent) */
+        private const val MAX_PARENT_DEPTH = 5
+
+        /** max number of versions of the same parent module per level (e.g. guava-parent 26.0-android + 33.4.0-jre) */
+        private const val PARENT_VERSION_SLOTS = 4
     }
 }

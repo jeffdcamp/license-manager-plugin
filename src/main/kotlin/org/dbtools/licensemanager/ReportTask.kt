@@ -1,6 +1,5 @@
 package org.dbtools.licensemanager
 
-import com.fasterxml.jackson.dataformat.xml.XmlMapper
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -40,6 +39,14 @@ abstract class ReportTask : DefaultTask() {
     @get:InputFiles
     @get:PathSensitive(PathSensitivity.NONE)
     abstract val pomFiles: ConfigurableFileCollection
+
+    /**
+     * pom.xml of every parent (and grandparent...) of [pomFiles]. Used to fill in inherited values such as
+     * licenses and to resolve `${...}` placeholders.
+     */
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val parentPomFiles: ConfigurableFileCollection
 
     @get:Input
     abstract val excludeArtifactIds: ListProperty<String>
@@ -117,16 +124,8 @@ abstract class ReportTask : DefaultTask() {
         logger.info("Found Artifact Dependencies count: ${pomFileList.size}")
 
         // read/parse all pom.xml files
-        val xmlMapper = XmlMapper()
-        var allPoms: List<Pom> = pomFileList.mapNotNull { pomFile ->
-            logger.info("Parsing pom.xml for artifact: ${pomFile.absoluteFile}")
-            try {
-                xmlMapper.readValue(pomFile, Pom::class.java)
-            } catch (e: Exception) {
-                logger.error("ERROR: Failed to parse pom file: [${pomFile.absoluteFile}]... (error: ${e.message})... skipping...")
-                null
-            }
-        }
+        val parentsByCoordinates = PomResolver.indexByCoordinates(parsePoms(parentPomFiles.files))
+        var allPoms: List<Pom> = parsePoms(pomFileList).map { pom -> PomResolver.resolve(pom, parentsByCoordinates) }
 
         // filters
         val filterGroups = excludeGroups.get()
@@ -143,6 +142,16 @@ abstract class ReportTask : DefaultTask() {
         allPoms = allPoms.sortedBy { it.name ?: it.artifactId }
 
         return allPoms
+    }
+
+    private fun parsePoms(pomFileList: Collection<File>): List<Pom> = pomFileList.mapNotNull { pomFile ->
+        logger.info("Parsing pom.xml for artifact: ${pomFile.absoluteFile}")
+        try {
+            PomResolver.parse(pomFile)
+        } catch (e: Exception) {
+            logger.error("ERROR: Failed to parse pom file: [${pomFile.absoluteFile}]... (error: ${e.message})... skipping...")
+            null
+        }
     }
 
     private fun formatUrl(url: String?): String? {

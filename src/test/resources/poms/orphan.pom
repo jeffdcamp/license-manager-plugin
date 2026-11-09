@@ -1,0 +1,10 @@
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.missing</groupId>
+    <artifactId>missing-parent</artifactId>
+    <version>3.1</version>
+  </parent>
+  <artifactId>orphan</artifactId>
+  <name>${project.unknown.property}</name>
+</project>
