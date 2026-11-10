@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-11-09
+
 ### Fixed
 
 - Values inherited from a parent pom are now included. Previously, dependencies such as `org.brotli:dec`
@@ -18,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Removed the deprecated `Configuration.isVisible` call (no effect since Gradle 9, removed in Gradle 11).
+- Gradle 9.9.0
+- Updated dependencies (Jackson 2.23.0, OkHttp 5.5.1, versions 0.67.0)
 
 ## [2.1.0] - 2026-10-21
 
