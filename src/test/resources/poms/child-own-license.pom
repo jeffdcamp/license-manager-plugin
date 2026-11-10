@@ -1,0 +1,15 @@
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.example</groupId>
+    <artifactId>middle</artifactId>
+    <version>1.0</version>
+  </parent>
+  <artifactId>child-own-license</artifactId>
+  <licenses>
+    <license>
+      <name>Child License</name>
+      <url>https://child.example.com/license</url>
+    </license>
+  </licenses>
+</project>
