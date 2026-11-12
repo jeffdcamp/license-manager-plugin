@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [2.2.0] - 2026-11-09
+## [2.2.1] - 2026-11-12
+
+2.2.0 was published without the parent pom / placeholder fixes below (it contained the 2.1.0 code with
+the 2.2.0 dependency updates). 2.2.1 is the release that actually includes them.
 
 ### Fixed
 
@@ -20,6 +23,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Removed the deprecated `Configuration.isVisible` call (no effect since Gradle 9, removed in Gradle 11).
+
+## [2.2.0] - 2026-11-09
+
+Note: this release was published without the parent pom / placeholder fixes; use 2.2.1 instead.
+
+### Changed
+
 - Gradle 9.9.0
 - Updated dependencies (Jackson 2.23.0, OkHttp 5.5.1, versions 0.67.0)
 
